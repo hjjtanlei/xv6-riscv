@@ -131,30 +131,30 @@ static uint64 (*syscalls[])(void) = {
 [SYS_helloos] sys_helloos,
 };
 
-static char* (*syscalls_string[])(void) = {
-[SYS_fork]    (char*)"sys_fork",
-[SYS_exit]      (char*)"sys_exit",
-[SYS_wait]      (char*)"sys_wait",
-[SYS_pipe]      (char*)"sys_pipe",
-[SYS_read]     (char*) "sys_read",
-[SYS_kill]      (char*)"sys_kill",
-[SYS_exec]     (char*) "sys_exec",
-[SYS_fstat]    (char*) "sys_fstat",
-[SYS_chdir]    (char*) "sys_chdir",
-[SYS_dup]       (char*)"sys_dup",
-[SYS_getpid]   (char*) "sys_getpid",
-[SYS_sbrk]      (char*)"sys_sbrk",
-[SYS_sleep]    (char*) "sys_sleep",
-[SYS_uptime]   (char*) "sys_uptime",
-[SYS_open]      (char*)"sys_open",
-[SYS_write]     (char*)"sys_write",
-[SYS_mknod]     (char*)"sys_mknod",
-[SYS_unlink]    (char*)"sys_unlink",
-[SYS_link]      (char*)"sys_link",
-[SYS_mkdir]    (char*) "sys_mkdir",
-[SYS_close]    (char*) "sys_close",
-[SYS_helloos]  (char*) "sys_helloos",
-};
+ 
+ static char *syscalls_string[SYS_helloos+1] ={
+  "sys_fork",
+  "sys_exit",
+  "sys_wait",
+   "sys_pipe",
+   "sys_read",
+   "sys_kill",
+   "sys_exec",
+  "sys_fstat",
+  "sys_chdir",
+   "sys_dup",
+  "sys_getpid",
+   "sys_sbrk",
+   "sys_sleep",
+   "sys_uptime",
+    "sys_open",
+   "sys_write",
+   "sys_mknod",
+  "sys_link",
+  "sys_mkdir",
+  "sys_close",
+  "sys_helloos",
+ };
 
 void
 syscall(void)
@@ -173,6 +173,6 @@ syscall(void)
 
   if ((num&(p->syscall_mask)) >0){
        printf("%d: syscall %s->%d\n",
-            p->pid, syscalls_string[num](), p->trapframe->a0);
+            p->pid, syscalls_string[num] , p->trapframe->a0);
   }
 }
