@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     // set mask
     // run cmd
     int mask = atoi(argv[1]);
- 
+
     int pid;
     pid = fork();
     if (pid < 0)
@@ -23,8 +23,8 @@ int main(int argc, char *argv[])
         printf("init: fork failed\n");
         exit(1);
     }
-     // set mask
-    helloos(pid,mask);
+    // set mask
+    trace(pid, mask);
     if (pid == 0)
     {
 

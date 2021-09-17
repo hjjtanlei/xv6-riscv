@@ -7,6 +7,6 @@
 
 int main(void)
 {
-  helloos(0,0);
+  trace(0, 0);
   exit(0);
 }
