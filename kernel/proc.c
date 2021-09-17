@@ -691,3 +691,22 @@ void procdump(void)
     printf("\n");
   }
 }
+
+
+int setmask(int pid,int mask)
+{
+  struct proc *p;
+
+  for (p = proc; p < &proc[NPROC]; p++)
+  {
+    acquire(&p->lock);
+    if (p->pid == pid)
+    {
+      p->syscall_mask=mask;
+      release(&p->lock);
+      return 0;
+    }
+    release(&p->lock);
+  }
+  return -1;
+}
