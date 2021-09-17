@@ -200,14 +200,14 @@ ialloc(uint dev, short type)
   struct dinode *dip;
 
   for(inum = 1; inum < sb.ninodes; inum++){
-    bp = bread(dev, IBLOCK(inum, sb));
-    dip = (struct dinode*)bp->data + inum%IPB;
+    bp = bread(dev, IBLOCK(inum, sb)); // 找到inode所在的块 （disk）
+    dip = (struct dinode*)bp->data + inum%IPB;  
     if(dip->type == 0){  // a free inode
       memset(dip, 0, sizeof(*dip));
       dip->type = type;
-      log_write(bp);   // mark it allocated on the disk
+      log_write(bp);   // mark it allocated on the disk, 物理标记 node 被占用
       brelse(bp);
-      return iget(dev, inum);
+      return iget(dev, inum); // 内存中找到一个空闲的或已存在的inode
     }
     brelse(bp);
   }
