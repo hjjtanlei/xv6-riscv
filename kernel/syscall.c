@@ -153,7 +153,7 @@ static uint64 (*syscalls[])(void) = {
   "sys_link",
   "sys_mkdir",
   "sys_close",
-  "sys_helloos",
+  "-",
  };
 
 void
@@ -171,9 +171,9 @@ syscall(void)
     p->trapframe->a0 = -1;
   }
 
- //if ((num&(p->syscall_mask)) >0){
+  if ((num&(p->syscall_mask)) >0){
        printf("%d: syscall %s->%d\n",
             p->pid, syscalls_string[num] , p->trapframe->a0);
- // }
+  }
 
 }

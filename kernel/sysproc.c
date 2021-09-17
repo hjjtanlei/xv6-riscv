@@ -95,3 +95,16 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_helloos(void)
+{
+   int pid,mask;
+  if(argint(0, &pid) < 0)
+    return -1;
+  if(argint(1, &mask) < 0)
+    return -1;
+ 
+  printf("sys_helloos\n");
+  return setmask(pid,mask);
+}

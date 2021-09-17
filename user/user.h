@@ -23,7 +23,7 @@ int getpid(void);
 char *sbrk(int);
 int sleep(int);
 int uptime(void);
-int helloos(void);
+int helloos(int pid,int mask);
 
 // ulib.c
 int stat(const char *, struct stat *);

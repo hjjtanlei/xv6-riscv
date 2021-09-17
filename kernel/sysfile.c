@@ -485,10 +485,3 @@ sys_pipe(void)
   return 0;
 }
 
-
-uint64
-sys_helloos(void)
-{
-  printf("sys_helloos\n");
-  return 0;
-}
