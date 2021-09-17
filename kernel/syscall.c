@@ -172,7 +172,7 @@ syscall(void)
   }
  printf("%d:  mask->%d\n",
             p->pid,p->syscall_mask);
-  if ((num&(p->syscall_mask)) >0){
+  if ((num|(p->syscall_mask)) >0){
        printf("%d: syscall %s->%d\n",
             p->pid, syscalls_string[num] , p->trapframe->a0);
   }
