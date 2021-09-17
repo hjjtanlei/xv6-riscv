@@ -175,7 +175,7 @@ syscall(void)
     printf("%d:  mask->%d\n",
             p->pid,p->syscall_mask);
        printf("%d: syscall %s->%d\n",
-            p->pid, syscalls_string[num] , p->trapframe->a0);
+            p->pid, syscalls_string[num-1] , p->trapframe->a0);
   }
 
 }
