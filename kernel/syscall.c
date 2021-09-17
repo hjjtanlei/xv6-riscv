@@ -171,8 +171,9 @@ syscall(void)
     p->trapframe->a0 = -1;
   }
 
-  if ((num&(p->syscall_mask)) >0){
+ //if ((num&(p->syscall_mask)) >0){
        printf("%d: syscall %s->%d\n",
             p->pid, syscalls_string[num] , p->trapframe->a0);
-  }
+ // }
+
 }
