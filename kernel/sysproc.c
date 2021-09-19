@@ -117,7 +117,7 @@ uint64
 sys_sysinfo(void)
 {
   printf("sys_sysinfo\n");
-  struct sysinfo *info;
+
   uint64 addr; // user pointer to struct stat
 
   if (argaddr(0, &addr) < 0)
