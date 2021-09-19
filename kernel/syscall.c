@@ -129,7 +129,7 @@ static uint64 (*syscalls[])(void) = {
     [SYS_sysinfo] sys_sysinfo,
 };
 
-static char *syscalls_string[SYS_trace + 1] = {
+static char *syscalls_string[SYS_sysinfo + 1] = {
     "sys_fork",
     "sys_exit",
     "sys_wait",
