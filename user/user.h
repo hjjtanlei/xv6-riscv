@@ -25,7 +25,7 @@ int sleep(int);
 int uptime(void);
 int trace(int pid, int mask);
 
-int sysinfo(struct sysinfo *);
+int gsysinfo(struct sysinfo *);
 // ulib.c
 int stat(const char *, struct stat *);
 char *strcpy(char *, const char *);
