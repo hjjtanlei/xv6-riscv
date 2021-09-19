@@ -14,10 +14,10 @@ sys_sysinfo(void)
 
   if (argaddr(0, &addr) < 0)
     return -1;
-  return dosysinfo(addr);
+  return sysinfo(addr);
 }
 
-int dosysinfo(uint64 addr)
+int sysinfo(uint64 addr)
 {
   printf("sysinfo addr %d \n", addr);
   struct proc *p = myproc();
