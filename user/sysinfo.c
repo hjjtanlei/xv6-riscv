@@ -9,6 +9,6 @@ int main(void)
 {
 
   struct sysinfo st;
-  gsysinfo(&st);
+  sysinfo(&st);
   exit(0);
 }
