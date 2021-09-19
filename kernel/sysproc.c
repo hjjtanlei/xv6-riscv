@@ -6,7 +6,7 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
-
+#include "sysinfo.h"
 uint64
 sys_exit(void)
 {
@@ -110,8 +110,6 @@ sys_trace(void)
   printf("sys_trace\n");
   return setmask(pid, mask);
 }
-
-
 
 uint64
 sys_sysinfo(void)
