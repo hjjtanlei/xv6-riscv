@@ -185,7 +185,7 @@ void            virtio_disk_rw(struct buf *, int);
 void            virtio_disk_intr(void);
 
 // sysinfo.c
-int sysinfo(uint64 addr);
+int ksysinfo(uint64 addr);
 
 
 // number of elements in fixed-size array

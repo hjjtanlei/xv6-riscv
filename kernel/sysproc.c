@@ -122,5 +122,5 @@ sys_sysinfo(void)
 
   if (argaddr(0, &addr) < 0)
     return -1;
-  return sysinfo(addr);
+  return ksysinfo(addr);
 }

@@ -5,7 +5,7 @@
 #include "defs.h"
 #include "sysinfo.h"
 
-int sysinfo(uint64 addr)
+int ksysinfo(uint64 addr)
 {
   printf("sysinfo addr %d \n", addr);
   struct proc *p = myproc();
