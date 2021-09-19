@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "syscall.h"
+#include "sysinfo.h"
 #include "defs.h"
 
 // Fetch the uint64 at addr from the current process.
@@ -129,7 +130,7 @@ static uint64 (*syscalls[])(void) = {
     [SYS_sysinfo] sys_sysinfo,
 };
 
-static char *syscalls_string[SYS_trace + 1] = {
+static char *syscalls_string[SYS_sysinfo + 1] = {
     "sys_fork",
     "sys_exit",
     "sys_wait",

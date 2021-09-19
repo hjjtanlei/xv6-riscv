@@ -8,7 +8,9 @@
 int main(void)
 {
 
-  struct sysinfo st;
-  sysinfo(&st);
+  struct sysinfo info;
+  sysinfo(&info);
+  fprintf(2, "sysinfo mem free:%d mem used:%d proc run %d proc all:%d\n", info.mem_free, info.mem_used, info.proc_run_count, info.proc_count);
+
   exit(0);
 }

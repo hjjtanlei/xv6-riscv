@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "sysinfo.h"
 
 struct cpu cpus[NCPU];
 
@@ -18,6 +19,7 @@ struct spinlock pid_lock;
 extern void forkret(void);
 static void freeproc(struct proc *p);
 
+extern char etext[];
 extern char trampoline[]; // trampoline.S
 
 // helps ensure that wakeups of wait()ing
@@ -205,6 +207,21 @@ proc_pagetable(struct proc *p)
     uvmfree(pagetable, 0);
     return 0;
   }
+
+  // uart registers
+  kvmmap(pagetable, UART0, UART0, PGSIZE, PTE_R | PTE_W);
+
+  // virtio mmio disk interface
+  kvmmap(pagetable, VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
+
+  // PLIC
+  kvmmap(pagetable, PLIC, PLIC, 0x400000, PTE_R | PTE_W);
+
+  // map kernel text executable and read-only.
+  kvmmap(pagetable, KERNBASE, KERNBASE, (uint64)etext - KERNBASE, PTE_R | PTE_X);
+
+  // map kernel data and the physical RAM we'll make use of.
+  kvmmap(pagetable, (uint64)etext, (uint64)etext, PHYSTOP - (uint64)etext, PTE_R | PTE_W);
 
   return pagetable;
 }
@@ -692,8 +709,7 @@ void procdump(void)
   }
 }
 
-
-int setmask(int pid,int mask)
+int setmask(int pid, int mask)
 {
   struct proc *p;
 
@@ -702,11 +718,33 @@ int setmask(int pid,int mask)
     acquire(&p->lock);
     if (p->pid == pid)
     {
-      p->syscall_mask=mask;
+      p->syscall_mask = mask;
       release(&p->lock);
       return 0;
     }
     release(&p->lock);
   }
   return -1;
+}
+
+void procinfo(struct sysinfo *info)
+{
+  struct proc *p;
+
+  for (p = proc; p < &proc[NPROC]; p++)
+  {
+    acquire(&p->lock);
+    if (p->state == RUNNING)
+    {
+
+      info->proc_run_count++;
+    }
+    else if (p->state != UNUSED)
+    {
+      info->proc_count++;
+    }
+    release(&p->lock);
+  }
+
+  return;
 }

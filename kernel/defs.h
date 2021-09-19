@@ -9,6 +9,8 @@ struct sleeplock;
 struct stat;
 struct superblock;
 
+struct sysinfo;
+
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
@@ -106,7 +108,7 @@ int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);
 int             setmask(int pid,int mask);
-
+void            procinfo(struct sysinfo *);
 // swtch.S
 void            swtch(struct context*, struct context*);
 
@@ -183,6 +185,10 @@ void            plic_complete(int);
 void            virtio_disk_init(void);
 void            virtio_disk_rw(struct buf *, int);
 void            virtio_disk_intr(void);
+
+// sysinfo.c
+int ksysinfo(uint64 addr);
+
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
