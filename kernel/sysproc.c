@@ -110,3 +110,17 @@ sys_trace(void)
   printf("sys_trace\n");
   return setmask(pid, mask);
 }
+
+
+
+uint64
+sys_sysinfo(void)
+{
+  printf("sys_sysinfo\n");
+  struct sysinfo *info;
+  uint64 addr; // user pointer to struct stat
+
+  if (argaddr(0, &addr) < 0)
+    return -1;
+  return sysinfo(addr);
+}

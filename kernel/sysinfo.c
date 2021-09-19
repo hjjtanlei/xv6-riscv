@@ -5,18 +5,6 @@
 #include "defs.h"
 #include "sysinfo.h"
 
-uint64
-sys_sysinfo(void)
-{
-  printf("sys_sysinfo\n");
-  struct sysinfo *info;
-  uint64 addr; // user pointer to struct stat
-
-  if (argaddr(0, &addr) < 0)
-    return -1;
-  return sysinfo(addr);
-}
-
 int sysinfo(uint64 addr)
 {
   printf("sysinfo addr %d \n", addr);
