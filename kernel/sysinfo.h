@@ -1,5 +1,4 @@
 
-
 struct sysinfo
 {
   uint mem_used;
