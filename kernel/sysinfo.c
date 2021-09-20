@@ -27,8 +27,9 @@ int ksysinfo(uint64 addr)
   struct sysinfo info;
   info.mem_free = 2;
   info.mem_used = 3;
-  info.proc_count = 2;
-  info.proc_run_count = 1;
+  info.proc_count = 0;
+  info.proc_run_count = 0;
+  procinfo(info);
   if (copyout(p->pagetable, addr, (char *)&info, sizeof(info)) < 0)
   {
     return -1;

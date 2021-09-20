@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "sysinfo.h"
 
 struct cpu cpus[NCPU];
 
@@ -692,8 +693,7 @@ void procdump(void)
   }
 }
 
-
-int setmask(int pid,int mask)
+int setmask(int pid, int mask)
 {
   struct proc *p;
 
@@ -702,11 +702,34 @@ int setmask(int pid,int mask)
     acquire(&p->lock);
     if (p->pid == pid)
     {
-      p->syscall_mask=mask;
+      p->syscall_mask = mask;
       release(&p->lock);
       return 0;
     }
     release(&p->lock);
   }
   return -1;
+}
+
+static void
+procinfo(struct sysinfo *info)
+{
+  struct proc *p;
+
+  for (p = proc; p < &proc[NPROC]; p++)
+  {
+    acquire(&p->lock);
+    if (p->state == RUNNING)
+    {
+    
+      info->proc_run_count++;
+    }
+    else if (p->state != UNUSED)
+    {
+      info->proc_count++;
+    }
+    release(&p->lock);
+  }
+
+  return;
 }
