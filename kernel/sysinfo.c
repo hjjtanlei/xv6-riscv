@@ -3,6 +3,7 @@
 #include "memlayout.h"
 #include "riscv.h"
 #include "defs.h"
+#include "proc.h"
 #include "sysinfo.h"
 
 uint64
