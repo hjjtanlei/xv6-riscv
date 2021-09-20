@@ -29,7 +29,7 @@ int ksysinfo(uint64 addr)
   info.mem_used = 3;
   info.proc_count = 0;
   info.proc_run_count = 0;
-  procinfo(info);
+  procinfo(&info);
   if (copyout(p->pagetable, addr, (char *)&info, sizeof(info)) < 0)
   {
     return -1;
