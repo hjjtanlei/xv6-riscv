@@ -20,11 +20,16 @@ sys_sysinfo(void)
 int ksysinfo(uint64 addr)
 {
   printf("sysinfo addr %d \n", addr);
-  // struct proc *p = myproc();
-  //  struct sysinfo st;
-
-  // if (copyout(p->pagetable, addr, (char *)&st, sizeof(st)) < 0)
-  //   return -1;
+  struct proc *p = myproc();
+  struct sysinfo info;
+  info.mem_free = 2;
+  info.mem_used = 3;
+  info.proc_count = 2;
+  info.proc_run_count = 1;
+  if (copyout(p->pagetable, addr, (char *)&info, sizeof(info)) < 0)
+  {
+    return -1;
+  }
 
   return 0;
 }
