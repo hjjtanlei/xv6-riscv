@@ -711,7 +711,7 @@ int setmask(int pid, int mask)
   return -1;
 }
 
-static void
+ void
 procinfo(struct sysinfo *info)
 {
   struct proc *p;
