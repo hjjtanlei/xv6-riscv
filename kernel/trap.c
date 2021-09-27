@@ -45,6 +45,7 @@ allocproc ->  p->context.ra = (uint64)forkret;
 //
 void usertrap(void)
 {
+  //printf("usertrap \n");
   int which_dev = 0;
 
   if ((r_sstatus() & SSTATUS_SPP) != 0)
@@ -55,17 +56,23 @@ void usertrap(void)
   w_stvec((uint64)kernelvec);
 
   struct proc *p = myproc();
+  // w_satp(MAKE_SATP(p->pagetable));
+  // sfence_vma();
 
+  //printf("usertrap begin pid:%d\n", p->pid);
   // save user program counter.
   p->trapframe->epc = r_sepc();
-
+  //printf("usertrap():  scause %p pid=%d\n", r_scause(), p->pid);
+  // printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
   if (r_scause() == 8)
   {
     // system call
 
     if (p->killed)
+    {
+      printf("usertrap 8 exit pid:%d\n", p->pid);
       exit(-1);
-
+    }
     // sepc points to the ecall instruction,
     // but we want to return to the next instruction.
     p->trapframe->epc += 4;
@@ -73,12 +80,17 @@ void usertrap(void)
     // an interrupt will change sstatus &c registers,
     // so don't enable until done with those registers.
     intr_on();
-
+    // printf("usertrap syscall pid:%d\n", p->pid);
     syscall();
+    //  printf("usertrap():  syscall scause %p pid=%d\n", r_scause(), p->pid);
+    //  printf("syscall------cpu %d run pid :%d name:%s \n", cpuid(), p->pid, p->name);
+    // printf("usertrap end syscall pid:%d\n", p->pid);
   }
   else if ((which_dev = devintr()) != 0)
   {
     // ok
+    // printf("usertrap(): devintr scause %p pid=%d\n", r_scause(), p->pid);
+    // printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
   }
   else
   {
@@ -88,12 +100,14 @@ void usertrap(void)
   }
 
   if (p->killed)
+  {
+    printf("usertrap exit pid:%d\n", p->pid);
     exit(-1);
-
+  }
   // give up the CPU if this is a timer interrupt.
   if (which_dev == 2)
     yield();
-
+  // printf("usertrap end pid:%d\n", p->pid);
   usertrapret();
 }
 
@@ -102,8 +116,11 @@ void usertrap(void)
 //
 void usertrapret(void)
 {
-  struct proc *p = myproc();
 
+  struct proc *p = myproc();
+  //printf("usertrapret------cpu %d run pid :%d name:%s pagetable:%p\n", cpuid(), p->pid, p->name, r_satp());
+
+  //printf("usertrapret pid:%d\n", p->pid);
   // we're about to switch the destination of traps from
   // kerneltrap() to usertrap(), so turn off interrupts until
   // we're back in user space, where usertrap() is correct.
@@ -111,10 +128,10 @@ void usertrapret(void)
 
   // send syscalls, interrupts, and exceptions to trampoline.S
   w_stvec(TRAMPOLINE + (uservec - trampoline));
-
+  // printf("usertrapret p:%d \n", p->pid);
   // set up trapframe values that uservec will need when
   // the process next re-enters the kernel.
-  p->trapframe->kernel_satp = r_satp();         // kernel page table
+  p->trapframe->kernel_satp = r_satp();         //MAKE_SATP(p->pagetable); //       //  //r_satp();         // MAKE_SATP(p->pagetable); // MAKE_SATP(p->pagetable); //    // kernel page table
   p->trapframe->kernel_sp = p->kstack + PGSIZE; // process's kernel stack
   p->trapframe->kernel_trap = (uint64)usertrap;
   p->trapframe->kernel_hartid = r_tp(); // hartid for cpuid()
@@ -145,6 +162,7 @@ void usertrapret(void)
 // on whatever the current kernel stack is.
 void kerneltrap()
 {
+  // struct proc *p = myproc();
   int which_dev = 0;
   uint64 sepc = r_sepc();
   uint64 sstatus = r_sstatus();
@@ -161,10 +179,24 @@ void kerneltrap()
     printf("sepc=%p stval=%p\n", r_sepc(), r_stval());
     panic("kerneltrap");
   }
+  // printf(" -------------kerneltrapcpu %d pagetable:%p \n", cpuid(), r_satp());
+
+  // if (p ){
+  //    printf(" -------------kerneltrapcpu %d run pid :%d name:%s \n", cpuid(),p->pid,p->name);
+  // }else {
+  //    printf(" -------------kerneltrapcpu %d  pnull\n", cpuid() );
+  // }
 
   // give up the CPU if this is a timer interrupt.
   if (which_dev == 2 && myproc() != 0 && myproc()->state == RUNNING)
+  {
+    //    if (p ){
+    //    printf(" -------------kerneltrap yield cpu %d run pid :%d name:%s \n", cpuid(),p->pid,p->name);
+    // }else {
+    //    printf(" -------------kerneltrap yield cpu %d  pnull\n", cpuid() );
+    // }
     yield();
+  }
 
   // the yield() may have caused some traps to occur,
   // so restore trap registers for use by kernelvec.S's sepc instruction.
@@ -199,6 +231,7 @@ int devintr()
 
     if (irq == UART0_IRQ)
     {
+      // printf("uartintr:%d\n",scause);
       uartintr();
     }
     else if (irq == VIRTIO0_IRQ)

@@ -45,7 +45,8 @@ sys_sbrk(void)
 
   if (argint(0, &n) < 0)
     return -1;
-  addr = myproc()->sz;
+  printf("sys_sbrk n:%d\n", n);
+  addr = USERBASE + myproc()->sz;
   if (growproc(n) < 0)
     return -1;
   return addr;

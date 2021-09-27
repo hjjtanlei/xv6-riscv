@@ -12,7 +12,7 @@
 int fetchaddr(uint64 addr, uint64 *ip)
 {
   struct proc *p = myproc();
-  if (addr >= p->sz || addr + sizeof(uint64) > p->sz)
+  if (addr >= p->sz + USERBASE || addr + sizeof(uint64) > p->sz + USERBASE)
     return -1;
   if (copyin(p->pagetable, (char *)ip, addr, sizeof(*ip)) != 0)
     return -1;
@@ -23,6 +23,7 @@ int fetchaddr(uint64 addr, uint64 *ip)
 // Returns length of string, not including nul, or -1 for error.
 int fetchstr(uint64 addr, char *buf, int max)
 {
+
   struct proc *p = myproc();
   int err = copyinstr(p->pagetable, buf, addr, max);
   if (err < 0)
@@ -161,9 +162,16 @@ void syscall(void)
   struct proc *p = myproc();
 
   num = p->trapframe->a7;
+
+  // printf("%d: syscall %s->[%d] a1:%d \n",
+  //        p->pid, syscalls_string[num - 1], p->trapframe->a0, p->trapframe->a1);
+
   if (num > 0 && num < NELEM(syscalls) && syscalls[num])
   {
     p->trapframe->a0 = syscalls[num]();
+    // printf("%d: syscall end %s->[%d]\n",
+    //        p->pid, syscalls_string[num - 1], p->trapframe->a0);
+    //printf(" -------------syscall end cpu %d run pid :%d name:%s pagetable:%p\n", cpuid(), p->pid, p->name, r_satp());
   }
   else
   {

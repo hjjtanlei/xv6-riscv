@@ -49,10 +49,20 @@ kvmmake(void)
   return kpgtbl;
 }
 
+void switch_kernel_pagetable()
+{
+  printf(" -------------switch_kernel_pagetable %d pagetable:%p \n", cpuid(), r_satp());
+
+  w_satp(MAKE_SATP(kernel_pagetable)); // stap 寄存器存放页表
+  sfence_vma();                        // flush tlb
+}
 // Initialize the one kernel_pagetable
 void kvminit(void)
 {
   kernel_pagetable = kvmmake();
+  printf(" -------------kvminit %d pagetable:%p \n", cpuid(), kernel_pagetable);
+
+  print_pagetable(kernel_pagetable);
 }
 
 // Switch h/w page table register to the kernel's page table,
@@ -142,17 +152,30 @@ void kvmmap(pagetable_t kpgtbl, uint64 va, uint64 pa, uint64 sz, int perm)
 // 此函数不允许重复映射
 int mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
 {
+
   uint64 a, last;
   pte_t *pte;
 
   a = PGROUNDDOWN(va);
   last = PGROUNDDOWN(va + size - 1);
+
+  if (pagetable != kernel_pagetable)
+  {
+    if (va < USERBASE)
+    {
+      printf("panic va:%x,a:%x,last:%x pagetable:%x \n", va, a, last, pagetable);
+    }
+  }
+  //printf("va:%x,a:%x,last:%x  \n", va, a, last);
   for (;;)
   {
     if ((pte = walk(pagetable, a, 1)) == 0)
       return -1;
-    if (*pte & PTE_V) // 重复映射
+    if (*pte & PTE_V)
+    { // 重复映射{}
+      printf("panic va:%x,a:%x,last:%x pagetable:%x \n", va, a, last, pagetable);
       panic("remap");
+    }
     *pte = PA2PTE(pa) | perm | PTE_V;
     if (a == last)
       break;
@@ -214,7 +237,7 @@ void uvminit(pagetable_t pagetable, uchar *src, uint sz)
     panic("inituvm: more than a page");
   mem = kalloc();
   memset(mem, 0, PGSIZE);
-  mappages(pagetable, 0, PGSIZE, (uint64)mem, PTE_W | PTE_R | PTE_X | PTE_U);
+  mappages(pagetable, USERBASE, PGSIZE, (uint64)mem, PTE_W | PTE_R | PTE_X | PTE_U);
   memmove(mem, src, sz);
 }
 
@@ -239,7 +262,7 @@ uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
       return 0;
     }
     memset(mem, 0, PGSIZE);
-    if (mappages(pagetable, a, PGSIZE, (uint64)mem, PTE_W | PTE_X | PTE_R | PTE_U) != 0)
+    if (mappages(pagetable, a + USERBASE, PGSIZE, (uint64)mem, PTE_W | PTE_X | PTE_R | PTE_U) != 0)
     {
       kfree(mem);
       uvmdealloc(pagetable, a, oldsz);
@@ -262,12 +285,61 @@ uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
   if (PGROUNDUP(newsz) < PGROUNDUP(oldsz))
   {
     int npages = (PGROUNDUP(oldsz) - PGROUNDUP(newsz)) / PGSIZE;
-    uvmunmap(pagetable, PGROUNDUP(newsz), npages, 1);
+    uvmunmap(pagetable, USERBASE + PGROUNDUP(newsz), npages, 1);
   }
 
   return newsz;
 }
 
+void print_pagetable(pagetable_t pagetable)
+{
+  int kernel = 0;
+  if (kernel_pagetable == pagetable)
+  {
+    kernel = 1;
+  }
+
+  for (int i = 0; i < 512; i++)
+  {
+    pte_t pte = pagetable[i];
+    if ((pte & PTE_V))
+    {
+      if (kernel)
+      {
+        printf(" kernel use :%d\n ", i);
+      }
+      else
+      {
+        printf("use :%d\n ", i);
+      }
+    }
+  }
+}
+//
+void copy_kernel_pagetable(pagetable_t pagetable)
+{
+  int copycount = 0;
+  for (int i = 0; i < 512; i++)
+  {
+    pte_t pte = kernel_pagetable[i];
+    if ((pte & PTE_V))
+    {
+
+      if (pagetable[i] & PTE_V)
+      {
+        printf("copy conflict:%d\n ", i);
+      }
+      else
+      {
+        printf("copy i:%d\n ", i);
+        pte_t *oldpte = &pagetable[i];
+        *oldpte = pte;
+        copycount++;
+      }
+    }
+  }
+  printf("copycount:%d\n ", copycount);
+}
 // Recursively free page-table pages.
 // All leaf mappings must already have been removed.
 void freewalk(pagetable_t pagetable)
@@ -275,6 +347,10 @@ void freewalk(pagetable_t pagetable)
   // there are 2^9 = 512 PTEs in a page table.
   for (int i = 0; i < 512; i++)
   {
+    if (i == 0 || i == 2 || i == 255)
+    { // kerbel page,skip
+      continue;
+    }
     pte_t pte = pagetable[i];
     if ((pte & PTE_V) && (pte & (PTE_R | PTE_W | PTE_X)) == 0)
     {
@@ -285,7 +361,8 @@ void freewalk(pagetable_t pagetable)
     }
     else if (pte & PTE_V)
     {
-      panic("freewalk: leaf");
+      //  printf("freewalk: leaf");
+      //painc("freewalk: leaf");
     }
   }
   kfree((void *)pagetable);
@@ -296,7 +373,7 @@ void freewalk(pagetable_t pagetable)
 void uvmfree(pagetable_t pagetable, uint64 sz)
 {
   if (sz > 0)
-    uvmunmap(pagetable, 0, PGROUNDUP(sz) / PGSIZE, 1);
+    uvmunmap(pagetable, 0 + USERBASE, PGROUNDUP(sz) / PGSIZE, 1);
   freewalk(pagetable);
 }
 
@@ -312,8 +389,8 @@ int uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
   uint64 pa, i;
   uint flags;
   char *mem;
-
-  for (i = 0; i < sz; i += PGSIZE)
+  sz = sz + USERBASE;
+  for (i = USERBASE; i < sz; i += PGSIZE)
   {
     if ((pte = walk(old, i, 0)) == 0)
       panic("uvmcopy: pte should exist");
@@ -343,7 +420,7 @@ void uvmclear(pagetable_t pagetable, uint64 va)
 {
   pte_t *pte;
 
-  pte = walk(pagetable, va, 0);
+  pte = walk(pagetable, va + USERBASE, 0);
   if (pte == 0)
     panic("uvmclear");
   *pte &= ~PTE_U;

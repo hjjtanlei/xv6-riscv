@@ -160,6 +160,9 @@ found:
 static void
 freeproc(struct proc *p)
 {
+
+  printf("freeproc\n");
+  switch_kernel_pagetable();
   if (p->trapframe)
     kfree((void *)p->trapframe);
   p->trapframe = 0;
@@ -192,45 +195,61 @@ proc_pagetable(struct proc *p)
   // at the highest user virtual address.
   // only the supervisor uses it, on the way
   // to/from user space, so not PTE_U.
-  if (mappages(pagetable, TRAMPOLINE, PGSIZE,
-               (uint64)trampoline, PTE_R | PTE_X) < 0)
-  {
-    uvmfree(pagetable, 0);
-    return 0;
-  }
+  // if (mappages(pagetable, TRAMPOLINE, PGSIZE,
+  //              (uint64)trampoline, PTE_R | PTE_X) < 0)
+  // {
+  //   uvmfree(pagetable, 0);
+  //   return 0;
+  // }
+
+  copy_kernel_pagetable(pagetable); // 所有的进程共享了kernel 512的页表，如果由一个进程修改了，其他进程就不能继续了
 
   // map the trapframe just below TRAMPOLINE, for trampoline.S.
   if (mappages(pagetable, TRAPFRAME, PGSIZE,
-               (uint64)(p->trapframe), PTE_R | PTE_W) < 0)
+               (uint64)(p->trapframe), PTE_R | PTE_W) < 0) // 关节点在这里（这个不是共享了，是每个进程独有的
   {
     uvmunmap(pagetable, TRAMPOLINE, 1, 0);
     uvmfree(pagetable, 0);
     return 0;
   }
 
-  // uart registers
-  kvmmap(pagetable, UART0, UART0, PGSIZE, PTE_R | PTE_W);
-
-  // virtio mmio disk interface
-  kvmmap(pagetable, VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
-
-  // PLIC
-  kvmmap(pagetable, PLIC, PLIC, 0x400000, PTE_R | PTE_W);
-
-  // map kernel text executable and read-only.
-  kvmmap(pagetable, KERNBASE, KERNBASE, (uint64)etext - KERNBASE, PTE_R | PTE_X);
-
-  // map kernel data and the physical RAM we'll make use of.
-  kvmmap(pagetable, (uint64)etext, (uint64)etext, PHYSTOP - (uint64)etext, PTE_R | PTE_W);
-
+  printf("proc_pagetable :%p\n", pagetable);
   return pagetable;
 }
 
+void print_p()
+{
+  int i = 0;
+  int c = 0;
+  struct proc *p;
+  for (p = proc; p < &proc[NPROC]; p++)
+  {
+
+    if (p->state == RUNNING)
+    {
+      i++;
+      // Switch to chosen process.  It is the process's job
+      // to release its lock and then reacquire it
+      // before jumping back to us.
+    }
+    if (p->state == RUNNABLE)
+    {
+      c++;
+    }
+  }
+
+  printf("running p:%d runnnable:%d\n", i, c);
+}
 // Free a process's page table, and free the
 // physical memory it refers to.
 void proc_freepagetable(pagetable_t pagetable, uint64 sz)
 {
-  uvmunmap(pagetable, TRAMPOLINE, 1, 0);
+  struct proc *p = myproc();
+  printf("proc_freepagetable :%p\n", pagetable);
+  printf("proc_freepagetable use :%p, pid:%d cur:%p\n", p->pagetable, p->pid, r_satp());
+  print_p();
+
+  //uvmunmap(pagetable, TRAMPOLINE, 1, 0);
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
   uvmfree(pagetable, sz);
 }
@@ -257,11 +276,12 @@ void userinit(void)
   // allocate one user page and copy init's instructions
   // and data into it.
   uvminit(p->pagetable, initcode, sizeof(initcode));
+  print_pagetable(p->pagetable);
   p->sz = PGSIZE;
 
   // prepare for the very first "return" from kernel to user.
-  p->trapframe->epc = 0;     // user program counter
-  p->trapframe->sp = PGSIZE; // user stack pointer
+  p->trapframe->epc = 0 + USERBASE;     // user program counter
+  p->trapframe->sp = PGSIZE + USERBASE; // user stack pointer
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
@@ -342,7 +362,8 @@ int fork(void)
   acquire(&np->lock);
   np->state = RUNNABLE;
   release(&np->lock);
-
+  printf("fork\n");
+  print_p();
   return pid;
 }
 
@@ -497,11 +518,17 @@ void scheduler(void)
       */
       if (p->state == RUNNABLE)
       {
+        printf("---------------cpu %d run pid :%d name:%s \n", cpuid(), p->pid, p->name);
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
+        printf("2  ------cpu %d run pid :%d name:%s \n", cpuid(), p->pid, p->name);
+        printf(" -------------scheduler %d cur pagetable:%p  use pagetable:%p p->state:%d\n", cpuid(), r_satp(), p->pagetable, p->state);
+
+        w_satp(MAKE_SATP(p->pagetable));
+        sfence_vma();
         swtch(&c->context, &p->context);
         // c->context 存储scheduler的指令环境，在跳转到别的进程时保存到cpu的context，切换到proc的context，在proc 放弃进程时将当时环境保存到proc的context，之后跳到cpu的context即scheduler函数内
 
@@ -523,9 +550,10 @@ void scheduler(void)
 // there's no process.
 void sched(void)
 {
+  switch_kernel_pagetable();
   int intena;
   struct proc *p = myproc();
-
+  // printf("sched pid:%d \n", p->pid);
   if (!holding(&p->lock))
     panic("sched p->lock");
   if (mycpu()->noff != 1)
@@ -543,10 +571,13 @@ void sched(void)
 // Give up the CPU for one scheduling round.
 void yield(void)
 {
+
   struct proc *p = myproc();
   acquire(&p->lock);
   p->state = RUNNABLE;
   sched();
+  // w_satp(MAKE_SATP(p->pagetable));
+  //sfence_vma();
   release(&p->lock);
 }
 
