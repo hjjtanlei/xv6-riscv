@@ -550,7 +550,7 @@ void scheduler(void)
 // there's no process.
 void sched(void)
 {
-  switch_kernel_pagetable();
+
   int intena;
   struct proc *p = myproc();
   // printf("sched pid:%d \n", p->pid);
@@ -621,7 +621,7 @@ void sleep(void *chan, struct spinlock *lk)
   // Go to sleep.
   p->chan = chan;
   p->state = SLEEPING;
-
+  switch_kernel_pagetable();
   sched();
 
   // Tidy up.
