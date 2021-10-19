@@ -162,7 +162,7 @@ freeproc(struct proc *p)
 {
 
   printf("freeproc\n");
-  switch_kernel_pagetable();
+  // switch_kernel_pagetable();
   if (p->trapframe)
     kfree((void *)p->trapframe);
   p->trapframe = 0;
@@ -550,7 +550,7 @@ void scheduler(void)
 // there's no process.
 void sched(void)
 {
-  switch_kernel_pagetable();
+  //switch_kernel_pagetable();
   int intena;
   struct proc *p = myproc();
   // printf("sched pid:%d \n", p->pid);
