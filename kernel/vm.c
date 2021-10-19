@@ -335,7 +335,7 @@ void vm_pagetable(pagetable_t pagetable, int level)
     if (*pte & PTE_V)
     {
       // 获取当前页表项指向的下一层级页表继续查找
-      for (int j = 0; i < level + 1; j++)
+      for (int j = 0; j < level + 1; j++)
       {
         printf("-");
       }
