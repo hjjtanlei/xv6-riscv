@@ -62,13 +62,14 @@ void kvminit(void)
   kernel_pagetable = kvmmake();
   printf(" -------------kvminit %d pagetable:%p \n", cpuid(), kernel_pagetable);
 
-  print_pagetable(kernel_pagetable);
+  vm_pagetable(kernel_pagetable, 0);
 }
 
 // Switch h/w page table register to the kernel's page table,
 // and enable paging.
 void kvminithart()
 {
+
   w_satp(MAKE_SATP(kernel_pagetable)); // stap 寄存器存放页表
   sfence_vma();                        // flush tlb
 }
@@ -314,11 +315,15 @@ void print_pagetable(pagetable_t pagetable)
       }
     }
   }
-
   vm_pagetable(pagetable, 0);
 }
 void vm_pagetable(pagetable_t pagetable, int level)
 {
+  int kernel = 0;
+  if (kernel_pagetable == pagetable)
+  {
+    kernel = 1;
+  }
 
   if (level > 1)
   {
@@ -326,7 +331,14 @@ void vm_pagetable(pagetable_t pagetable, int level)
   }
   if (level == 0)
   {
-    printf(" pagetable :%p\n ", pagetable);
+    if (kernel == 0)
+    {
+      printf(" pagetable :%p\n ", pagetable);
+    }
+    else
+    {
+      printf(" kernel pagetable :%p\n ", pagetable);
+    }
   }
   // 获取当前页表项
   for (int i = 0; i < 512; i++)
