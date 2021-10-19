@@ -325,7 +325,7 @@ void vm_pagetable(pagetable_t pagetable, int level)
     kernel = 1;
   }
 
-  if (level > 1)
+  if (level > 0)
   {
     return;
   }
@@ -524,6 +524,8 @@ int copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 // Return 0 on success, -1 on error.
 int copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 {
+  printf(" +++++++++++++++-copyinstr %d cur pagetable:%p  \n", cpuid(), r_satp());
+
   uint64 n, va0, pa0;
   int got_null = 0;
 
