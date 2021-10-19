@@ -320,7 +320,7 @@ void print_pagetable(pagetable_t pagetable)
 void vm_pagetable(pagetable_t pagetable, int level)
 {
 
-  if (level > 2)
+  if (level > 1)
   {
     return;
   }
@@ -337,7 +337,7 @@ void vm_pagetable(pagetable_t pagetable, int level)
       // 获取当前页表项指向的下一层级页表继续查找
       for (int j = 0; j < level + 1; j++)
       {
-        printf("-");
+        printf(".. ");
       }
       printf(" %d:pte:%p pa:%p\n ", i, *pte, PTE2PA(*pte));
       pagetable_t next_pagetable = (pagetable_t)PTE2PA(*pte);
