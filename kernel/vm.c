@@ -314,6 +314,36 @@ void print_pagetable(pagetable_t pagetable)
       }
     }
   }
+
+  vm_pagetable(pagetable, 0);
+}
+void vm_pagetable(pagetable_t pagetable, int level)
+{
+
+  if (level > 2)
+  {
+    return;
+  }
+  if (level == 0)
+  {
+    printf(" pagetable :%p\n ", pagetable);
+  }
+  // 获取当前页表项
+  for (int i = 0; i < 512; i++)
+  {
+    pte_t *pte = &pagetable[i];
+    if (*pte & PTE_V)
+    {
+      // 获取当前页表项指向的下一层级页表继续查找
+      for (int j = 0; i < level + 1; j++)
+      {
+        printf("-");
+      }
+      printf(" %d:pte:%p pa:%p\n ", i, *pte, PTE2PA(*pte));
+      pagetable_t next_pagetable = (pagetable_t)PTE2PA(*pte);
+      vm_pagetable(next_pagetable, level + 1);
+    }
+  }
 }
 //
 void copy_kernel_pagetable(pagetable_t pagetable)
