@@ -537,6 +537,8 @@ int copyinstrVM(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
     uint64 srcpa = walkaddr(pagetable, srcva);
     char *p = (char *)(srcva);
     char *pa = (char *)(pa0 + (srcva - va0));
+    w_satp(MAKE_SATP(pagetable));
+    sfence_vma();
     printf(" +++++++++++++++-copyinstrVM %d cur pagetable:%p p->pagetable:%p  p:%p pa:%p srcpa:%p pas:[%s] ps:[%s] \n", cpuid(), r_satp(), pagetable, p, pa0, srcpa, pa, p);
 
     while (n > 0)
