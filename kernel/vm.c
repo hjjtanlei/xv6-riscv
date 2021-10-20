@@ -534,7 +534,7 @@ int copyinstrVM(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
       n = max;
 
     char *p = (char *)(srcva);
-    printf(" +++++++++++++++-copyinstrVM %d cur pagetable:%p p->pagetable:%p  p:%p\n", cpuid(), r_satp(), pagetable, p);
+    printf(" +++++++++++++++-copyinstrVM %d cur pagetable:%p p->pagetable:%p  p:%p ps:%s\n", cpuid(), r_satp(), pagetable, p, p);
 
     while (n > 0)
     {
