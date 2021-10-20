@@ -522,7 +522,7 @@ int copyinstrVM(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 {
   printf(" +++++++++++++++-copyinstrVM %d cur pagetable:%p p->pagetable:%p dst:%p src:%p\n", cpuid(), r_satp(), pagetable, dst, srcva);
 
-  uint64 n, va0;
+  uint64 n, va0, pa0;
   int got_null = 0;
 
   while (got_null == 0 && max > 0)
@@ -532,9 +532,9 @@ int copyinstrVM(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
     n = PGSIZE - (srcva - va0);
     if (n > max)
       n = max;
-
+    pa0 = walkaddr(pagetable, va0);
     char *p = (char *)(srcva);
-    printf(" +++++++++++++++-copyinstrVM %d cur pagetable:%p p->pagetable:%p  p:%p ps:[%s]\n", cpuid(), r_satp(), pagetable, p, p);
+    printf(" +++++++++++++++-copyinstrVM %d cur pagetable:%p p->pagetable:%p  p:%p pa:%p ps:[%s]\n", cpuid(), r_satp(), pagetable, p, pa0, p);
 
     while (n > 0)
     {
