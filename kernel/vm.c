@@ -520,7 +520,7 @@ int copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 
 int copyinstrVM(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 {
-  printf(" +++++++++++++++-copyinstrVM %d cur pagetable:%p  \n", cpuid(), r_satp());
+  printf(" +++++++++++++++-copyinstrVM %d cur pagetable:%p  dst:%p src:%p\n", cpuid(), r_satp(), dst, srcva);
 
   uint64 n, va0;
   int got_null = 0;
