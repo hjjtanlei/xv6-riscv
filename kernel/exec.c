@@ -17,7 +17,7 @@ int exec(char *path, char **argv)
   struct elfhdr elf;
   struct inode *ip;
   struct proghdr ph;
-  pagetable_t pagetable = 0, oldpagetable;
+  pagetable_t pagetable = 0, kpagetable = 0, oldpagetable, oldkpagetable;
   struct proc *p = myproc();
   printf("exec pid %d\n", p->pid);
   begin_op();
@@ -37,6 +37,8 @@ int exec(char *path, char **argv)
 
   if ((pagetable = proc_pagetable(p)) == 0)
     goto bad;
+  if ((kpagetable = proc_pagetable(p)) == 0)
+    goto bad;
   printf("old proc pagetable:%p \n", p->pagetable);
   printf("new proc pagetable:%p\n", pagetable);
   // Load program into memory.
@@ -53,10 +55,14 @@ int exec(char *path, char **argv)
     uint64 sz1;
     if ((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz)) == 0)
       goto bad;
+    if ((sz1 = kvmalloc(kpagetable, sz, ph.vaddr + ph.memsz)) == 0)
+      goto bad;
     sz = sz1;
     if (ph.vaddr % PGSIZE != 0)
       goto bad;
     if (loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
+      goto bad;
+    if (loadseg(kpagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
       goto bad;
   }
   iunlockput(ip);
@@ -72,8 +78,11 @@ int exec(char *path, char **argv)
   uint64 sz1;
   if ((sz1 = uvmalloc(pagetable, sz, sz + 2 * PGSIZE)) == 0)
     goto bad;
+  if ((sz1 = kvmalloc(kpagetable, sz, sz + 2 * PGSIZE)) == 0)
+    goto bad;
   sz = sz1;
   uvmclear(pagetable, sz - 2 * PGSIZE);
+  uvmclear(kpagetable, sz - 2 * PGSIZE);
   sp = sz + USERBASE;
   stackbase = sp - PGSIZE;
 
@@ -88,6 +97,8 @@ int exec(char *path, char **argv)
       goto bad;
     if (copyout(pagetable, sp, argv[argc], strlen(argv[argc]) + 1) < 0)
       goto bad;
+    if (copyout(kpagetable, sp, argv[argc], strlen(argv[argc]) + 1) < 0)
+      goto bad;
     ustack[argc] = sp;
   }
   ustack[argc] = 0;
@@ -98,6 +109,8 @@ int exec(char *path, char **argv)
   if (sp < stackbase)
     goto bad;
   if (copyout(pagetable, sp, (char *)ustack, (argc + 1) * sizeof(uint64)) < 0)
+    goto bad;
+  if (copyout(kpagetable, sp, (char *)ustack, (argc + 1) * sizeof(uint64)) < 0)
     goto bad;
 
   // arguments to user main(argc, argv)
@@ -113,16 +126,18 @@ int exec(char *path, char **argv)
 
   // Commit to the user image.
   oldpagetable = p->pagetable;
+  oldkpagetable = p->kpagetable;
   p->pagetable = pagetable;
+  p->kpagetable = kpagetable;
   p->sz = sz;
   p->trapframe->epc = elf.entry + USERBASE; // initial program counter = main 用户态pc 及堆栈设置，返回用户态时将执行exec对应的程序
   p->trapframe->sp = sp;
   printf("1---------------exec cpu %d run pid :%d name:%s \n", cpuid(), p->pid, p->name);
   // initial stack pointer
-  w_satp(MAKE_SATP(p->pagetable));
+  w_satp(MAKE_SATP(p->kpagetable));
   sfence_vma();
   proc_freepagetable(oldpagetable, oldsz);
-
+  proc_freepagetable(oldkpagetable, oldsz);
   printf("exec end1 pid:%d, p state:%d \n", p->pid, p->state);
   print_pagetable(pagetable);
   //print_p();
@@ -134,6 +149,8 @@ int exec(char *path, char **argv)
 bad:
   if (pagetable)
     proc_freepagetable(pagetable, sz);
+  if (kpagetable)
+    proc_freepagetable(kpagetable, sz);
   if (ip)
   {
     iunlockput(ip);

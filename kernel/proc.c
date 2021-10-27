@@ -144,7 +144,13 @@ found:
     release(&p->lock);
     return 0;
   }
-
+  p->kpagetable = proc_pagetable(p);
+  if (p->kpagetable == 0)
+  {
+    freeproc(p);
+    release(&p->lock);
+    return 0;
+  }
   // Set up new context to start executing at forkret,
   // which returns to user space.
   memset(&p->context, 0, sizeof(p->context));
@@ -168,6 +174,8 @@ freeproc(struct proc *p)
   p->trapframe = 0;
   if (p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
+  if (p->kpagetable)
+    proc_freepagetable(p->kpagetable, p->sz);
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
@@ -276,6 +284,7 @@ void userinit(void)
   // allocate one user page and copy init's instructions
   // and data into it.
   uvminit(p->pagetable, initcode, sizeof(initcode));
+  kvminit(p->kpagetable, initcode, sizeof(initcode));
   print_pagetable(p->pagetable);
   p->sz = PGSIZE;
 
@@ -301,6 +310,7 @@ int growproc(int n)
   sz = p->sz;
   if (n > 0)
   {
+    kvmalloc(p->kpagetable, sz, sz + n);
     if ((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0)
     {
       return -1;
@@ -308,6 +318,7 @@ int growproc(int n)
   }
   else if (n < 0)
   {
+    uvmdealloc(p->kpagetable, sz, sz + n);
     sz = uvmdealloc(p->pagetable, sz, sz + n);
   }
   p->sz = sz;
