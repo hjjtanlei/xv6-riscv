@@ -346,6 +346,12 @@ int fork(void)
     release(&np->lock);
     return -1;
   }
+  if (uvmcopy(p->kpagetable, np->kpagetable, p->sz) < 0)
+  {
+    freeproc(np);
+    release(&np->lock);
+    return -1;
+  }
   np->sz = p->sz;
 
   // copy saved user registers.
