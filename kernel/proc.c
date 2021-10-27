@@ -284,7 +284,7 @@ void userinit(void)
   // allocate one user page and copy init's instructions
   // and data into it.
   uvminit(p->pagetable, initcode, sizeof(initcode));
-  kvminit(p->kpagetable, initcode, sizeof(initcode));
+  k_vminit(p->kpagetable, initcode, sizeof(initcode));
   print_pagetable(p->pagetable);
   p->sz = PGSIZE;
 

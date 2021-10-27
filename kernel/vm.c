@@ -241,7 +241,7 @@ void uvminit(pagetable_t pagetable, uchar *src, uint sz)
   mappages(pagetable, USERBASE, PGSIZE, (uint64)mem, PTE_W | PTE_R | PTE_X | PTE_U);
   memmove(mem, src, sz);
 }
-void kvminit(pagetable_t pagetable, uchar *src, uint sz)
+void k_vminit(pagetable_t pagetable, uchar *src, uint sz)
 {
   char *mem;
 
