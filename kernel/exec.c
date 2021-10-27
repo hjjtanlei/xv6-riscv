@@ -134,7 +134,7 @@ int exec(char *path, char **argv)
   p->trapframe->sp = sp;
   printf("1---------------exec cpu %d run pid :%d name:%s \n", cpuid(), p->pid, p->name);
   // initial stack pointer
-  w_satp(MAKE_SATP(p->kpagetable));
+  w_satp(MAKE_SATP(p->pagetable));
   sfence_vma();
   proc_freepagetable(oldpagetable, oldsz);
   proc_freepagetable(oldkpagetable, oldsz);
