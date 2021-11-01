@@ -62,7 +62,7 @@ int exec(char *path, char **argv)
       goto bad;
     if (loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
       goto bad;
-    if (loadseg(kpagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
+    if (kloadseg(kpagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
       goto bad;
   }
   iunlockput(ip);
@@ -175,6 +175,31 @@ loadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset, uint sz
   for (i = 0; i < sz; i += PGSIZE)
   {
     pa = walkaddr(pagetable, va + i);
+    if (pa == 0)
+      panic("loadseg: address should exist");
+    if (sz - i < PGSIZE)
+      n = sz - i;
+    else
+      n = PGSIZE;
+    if (readi(ip, 0, (uint64)pa, offset + i, n) != n)
+      return -1;
+  }
+
+  return 0;
+}
+
+static int
+kloadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset, uint sz)
+{
+  uint i, n;
+  uint64 pa;
+  va = va + USERBASE;
+  if ((va % PGSIZE) != 0)
+    panic("loadseg: va must be page aligned");
+
+  for (i = 0; i < sz; i += PGSIZE)
+  {
+    pa = kwalkaddr(pagetable, va + i);
     if (pa == 0)
       panic("loadseg: address should exist");
     if (sz - i < PGSIZE)
